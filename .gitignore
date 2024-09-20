@@ -1,0 +1,10 @@
+.env
+
+# TODO: local repos must be replaced before pushing
+/requirements.txt
+
+# directories
+# TODO: selectivly push after testing
+/nbs
+/nilmtk
+/api

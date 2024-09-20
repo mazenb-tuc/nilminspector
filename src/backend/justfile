@@ -1,0 +1,7 @@
+set dotenv-load
+
+dev:
+	cd ..; $CONDA_ENV_BIN_PATH/uvicorn backend.main:app --reload --port $BACKEND_PORT
+
+open-docs:
+	open http://localhost:$BACKEND_PORT/docs

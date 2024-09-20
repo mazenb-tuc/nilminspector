@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NILM Inspector</title>
+</head>
+
+<body>
+  <h1>NILMInspector</h1>
+
+  <div style="display: flex; gap: 2em; flex-direction: column">
+    <!-- Plot and Controls -->
+    <div style="display: flex; gap: 2em">
+      <!-- Drawing area -->
+      <div id="drawingArea" style="margin: .2em">
+
+        <!-- Quick Control -->
+        <div id="quickCtrl">
+          <!-- Data -->
+          <div id="data" style="display: flex; flex-direction: column">
+            <!-- General data select -->
+            <div style="display: flex; gap: .4em">
+              <!-- Dataset -->
+              <div>
+                <label for="dataset">Dataset</label>
+                <select id="dataset"></select>
+              </div>
+
+              <!-- House -->
+              <div>
+                <label for="house">House</label>
+                <select id="house"></select>
+              </div>
+
+              <!-- App -->
+              <div>
+                <label for="app">App</label>
+                <select id="app"></select>
+              </div>
+
+              <!-- Exp -->
+              <div>
+                <label for="exp">Exp</label>
+                <select id="exp"></select>
+              </div>
+            </div>
+
+            <!-- Pick Date and Time -->
+            <div style="display: flex; gap: .4em">
+              <!-- Get random data -->
+              <div>
+                <button id="randomData">Random</button>
+
+                <!-- Only with active appliances -->
+                <div>
+                  <input type="checkbox" id="randomDataOnlyActive" />
+                  <label for="randomDataOnlyActive">Only active</label>
+                </div>
+              </div>
+
+              <!-- Date picker -->
+              <div>
+                <label for="datePicker">Date</label>
+                <input type="date" id="datePicker" />
+              </div>
+
+              <!-- Start time picker -->
+              <div>
+                <label for="startTimePicker">Start Time</label>
+                <input type="time" id="startTimePicker" />
+              </div>
+
+              <!-- Duration -->
+              <div>
+                <label for="durationSamples">Duration (Samples)</label>
+                <input type="number" id="durationSamples" step="1" value="1440" />
+              </div>
+
+              <button id="getData">Get</button>
+            </div>
+          </div>
+
+          <!-- Quick shift control: Shift data by specified duration -->
+          <div id="shift" style="display: flex; gap: .4em">
+            <!-- Data Info -->
+            <div id="dataInfo">
+              <!-- info about currently visible data -->
+
+              <!-- Train or test? -->
+              <p class="traintest"></p>
+
+              <!-- Day of the week -->
+              <p class="dayname"></p>
+
+              <!-- Holiday? -->
+              <p class="holiday"></p>
+
+              <!-- Weekend? -->
+              <p class="weekend"></p>
+            </div>
+
+            <!-- Previous day -->
+            <button id="shiftPrevDayData">Day &lt;&lt;</button>
+
+            <!-- Previous section -->
+            <button id="shiftPrevDurationData">&lt;</button>
+
+            <!-- Section duration -->
+            <input type="number" id="shiftDurationSamples" placeholder="Shift Duration (Samples)" step="1"
+              value="240" />
+
+            <!-- Next section -->
+            <button id="shiftNextDurationData">&gt;</button>
+
+            <!-- Next day -->
+            <button id="shiftNextDayData">&gt;&gt; Day</button>
+
+            <!-- Zoom -->
+            <button id="zoom">Zoom</button>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 1em">
+          <canvas id="pltCanvas" width="800" height="600"></canvas>
+
+          <!-- Legend -->
+          <div id="legend" style="display: flex; flex-direction: column"></div>
+        </div>
+
+        <!-- Info (e.g. errors) -->
+        <div id="info"></div>
+      </div>
+
+      <!-- Controls -->
+      <div>
+        <!-- Exp info -->
+        <details open>
+          <summary>
+            <h3>Experiment Info</h3>
+          </summary>
+
+          <div id="expInfo"></div>
+        </details>
+
+        <!-- Data with Error -->
+        <details>
+          <summary>
+            <h3>Error Analysis</h3>
+          </summary>
+
+          <!-- On power threshold to compute the F1 score -->
+          <div>
+            <h4>On Power Threshold</h4>
+            <p>for computing the F1 score</p>
+
+            <!-- Threshold -->
+            <div>
+              <label for="onPowerThreshold">Threshold</label>
+              <input type="number" id="onPowerThreshold" step="1" value="10" />
+            </div>
+
+            <!-- Btn to set from exp -->
+            <button id="setOnPowerThresholdFromExp">Set from Exp</button>
+
+            <!-- Btn to recompute the f1 score -->
+            <button id="recomputeF1">Recompute</button>
+
+            <!-- Checkbox to show on plot -->
+            <div>
+              <input type="checkbox" id="showOnPowerThreshold" />
+              <label for="showOnPowerThreshold">Show</label>
+            </div>
+          </div>
+
+          <!-- Data where Error in x -->
+          <div>
+            <h4>Get random data where prediction error is in range</h4>
+
+            <!-- Number of bins -->
+            <div>
+              <label for="numErrBins">Number of bins</label>
+              <input type="number" id="numErrBins" step="1" value="100" />
+            </div>
+
+            <!-- Plot err hist in a canvas -->
+            <canvas id="errHistCanvas" width="400" height="100"></canvas>
+
+            <!-- Select error bin -->
+            <div>
+              <label for="errBin">Error bin</label>
+              <input type="number" id="errBin" step="1" min="0" value="100" />
+            </div>
+
+            <!-- Info about selected bin -->
+            <div id="errBinInfo">
+              <!-- Selected error range -->
+              <p>
+                Error range: <span id="errRangeFrom"></span> to <span id="errRangeTo"></span>
+              </p>
+              <p>
+                Number of windows in this range: <span id="errNumWindows"></span>
+              </p>
+            </div>
+
+            <!-- Number of windows to get -->
+            <div>
+              <label for="errGetDuration">Duration (Samples)</label>
+              <input type="number" id="errGetDuration" step="1" value="400" />
+            </div>
+
+            <button id="getRndDataWithErr">Get</button>
+          </div>
+        </details>
+
+        <!-- Modify -->
+        <details>
+          <summary>
+            <h3>Data Modification</h3>
+          </summary>
+
+          <!-- Mains data -->
+          <div>
+            <input type="checkbox" id="modifyMains" />
+            <label for="modifyMains">Mains</label>
+            <button id="resetMains">Reset</button>
+          </div>
+        </details>
+
+        <details>
+          <summary>
+            <h3>Markers</h3>
+          </summary>
+
+          <!-- Mean -->
+          <div>
+            <h4>Mean</h4>
+
+            <p>
+              Mean: <span id="meanWatts"></span> Watts
+            </p>
+
+            <!-- Checkbox to plot mean -->
+            <div>
+              <input type="checkbox" id="showMean" />
+              <label for="showMean">Show</label>
+            </div>
+          </div>
+
+
+          <!-- Standard Deviation -->
+          <div>
+            <h4>Standard Deviation</h4>
+
+            <!-- Specify number of stds -->
+            <div>
+              <label for="stdThreshold">Threshold (number of standard deviations): </label>
+              <input type="number" id="stdThreshold" step="0.1" value="3" />
+            </div>
+            <p>
+              in Watts: <span id="stdWatts"></span>
+            </p>
+
+            <!-- Checkbox to plot standard deviation -->
+            <div>
+              <input type="checkbox" id="showStds" />
+              <label for="showStds">Show</label>
+            </div>
+          </div>
+
+          <!-- Sun times -->
+          <div>
+            <h4>Sun Times</h4>
+
+            <!-- Checkbox to plot sun times -->
+            <div>
+              <input type="checkbox" id="showSuntimes" />
+              <label for="showSuntimes">Show</label>
+            </div>
+
+            <!-- Line width -->
+            <div>
+              <label for="suntimesLineWidth">Line width</label>
+              <input type="number" id="suntimesLineWidth" step="0.1" value="1" />
+            </div>
+          </div>
+        </details>
+
+        <!-- Prediction -->
+        <details>
+          <summary>
+            <h3>Prediction</h3>
+          </summary>
+
+          <!-- Select model -->
+          <div>
+            <label for="model">Model</label>
+            <select id="model"></select>
+          </div>
+
+          <!-- Model info -->
+          <p id="modelInfo"></p>
+
+          <!-- Select exp model -->
+          <button id="selectExpModel">Select Exp Model</button>
+
+          <button id="predict">Predict</button>
+
+          <!-- Live prediction -->
+          <div>
+            <h4>Live</h4>
+            <!-- Toggle live prediction -->
+            <div>
+              <label for="livePredictionEnabled">Enabled</label>
+              <input type="checkbox" id="livePredictionEnabled" />
+            </div>
+
+            <!-- Grace period (how long after a modification before running the prediction again) -->
+            <div title="how long after a modification before running the prediction again">
+              <label for="livePredictionGracePeriodSec">Grace period (sec)</label>
+              <input type="number" id="livePredictionGracePeriodSec" step="1" value="1" />
+            </div>
+          </div>
+        </details>
+
+        <!-- Snapshot -->
+        <details>
+          <summary>
+            <h3>Snapshot</h3>
+          </summary>
+          <div>
+            <label for="snapshotName">Name</label>
+            <input type="text" id="snapshotName" />
+          </div>
+          <div>
+            <label for="snapshotDesc">Description</label>
+            <textarea id="snapshotDesc"></textarea>
+          </div>
+          <button id="snapshotTake">Take</button>
+          <button id="snapshotSave">Save all snapshots</button>
+        </details>
+
+        <!-- Feature Maps -->
+        <details id="fm">
+          <summary>
+            <h3>Feature Maps</h3>
+          </summary>
+
+          <!-- Size -->
+          <div>
+            <label for="fmWidth">Width</label>
+            <input type="number" id="fmWidth" step="1" value="200" />
+          </div>
+          <div>
+            <label for="fmHeight">Height</label>
+            <input type="number" id="fmHeight" step="1" value="100" />
+          </div>
+
+          <!-- Get -->
+          <button>Get</button>
+
+          <!-- Info -->
+          <details>
+            <summary>Info</summary>
+            <ul>
+              <li>color indicates the activation value</li>
+              <li>x-axis is time step after convolution</li>
+              <li>y-axis is the feature map index</li>
+            </ul>
+          </details>
+
+          <!-- Canvases to show a heatmap of each feature map -->
+          <div id="canvasContainer" style="display: flex;flex-wrap: wrap;gap: 1rem;"></div>
+        </details>
+
+        <!-- Plot control -->
+        <details>
+          <summary>
+            <h3>Plot control</h3>
+          </summary>
+
+          <!-- Logarithmic scale -->
+          <div>
+            <input type="checkbox" id="logScale" />
+            <label for="logScale">Logarithmic scale</label>
+          </div>
+
+          <!-- Line width -->
+          <div>
+            <label for="lineWidth">Line width</label>
+            <input type="number" id="lineWidth" step="1" value="1" />
+          </div>
+
+
+          <!-- Canvas size -->
+          <div id="resizeCanvas">
+            <h4>Canvas size</h4>
+
+            <div>
+              <!-- Width -->
+              <label for="canvasWidth">Width</label>
+              <input type="number" id="canvasWidth" step="10" />
+            </div>
+            <div>
+              <!-- Height -->
+              <label for="canvasHeight">Height</label>
+              <input type="number" id="canvasHeight" step="10" />
+            </div>
+          </div>
+
+          <!-- Padding -->
+          <div>
+            <h4>Padding</h4>
+            <!-- Buttom -->
+            <div>
+              <label for="paddingButtom">Padding bottom</label>
+              <input type="number" id="paddingButtom" step="1" value="30" />
+            </div>
+            <!-- Top -->
+            <div>
+              <label for="paddingTop">Padding top</label>
+              <input type="number" id="paddingTop" step="1" value="10" />
+            </div>
+            <!-- Left -->
+            <div>
+              <label for="paddingLeft">Padding left</label>
+              <input type="number" id="paddingLeft" step="1" value="70" />
+            </div>
+            <!-- Right -->
+            <div>
+              <label for="paddingRight">Padding right</label>
+              <input type="number" id="paddingRight" step="1" value="0" />
+            </div>
+          </div>
+          <!-- Labels -->
+          <div>
+            <h4>Labels</h4>
+            <!-- Font size -->
+            <div>
+              <label for="labelsFontSize">Labels font size</label>
+              <input type="number" id="labelsFontSize" step="1" value="10" />
+            </div>
+            <!-- Buttom padding -->
+            <div>
+              <div>
+                <label for="labelsPaddingButtom">Padding bootm</label>
+                <input type="number" id="labelsPaddingButtom" step="1" value="47" />
+              </div>
+              <button id="labelsPaddingButtomReset">Reset</button>
+            </div>
+            <!-- Every -->
+            <div>
+              <h5>Every</h5>
+              <div>
+                <!-- X -->
+                <div>
+                  <label for="xLabelEvery">X (Time)</label>
+                  <input type="number" id="xLabelEvery" step="1" value="140" class="navExclude" disabled />
+                </div>
+              </div>
+
+              <!-- Y -->
+              <div>
+                <label for="yLabelEvery">Y (Watts)</label>
+                <input type="number" id="yLabelEvery" step="1" value="200" />
+              </div>
+
+              <!-- Start from 0W line -->
+              <div>
+                <input type="checkbox" id="startFromZeroW" />
+                <label title="always draw 0 watts line and start from it" for="startFromZeroW">Start from 0W
+                  line</label>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <!-- Snapshots Container -->
+    <div>
+      <h2>Snapshots</h2>
+      <div id="snapshotsContainer"></div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
