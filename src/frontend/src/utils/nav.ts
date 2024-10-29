@@ -23,3 +23,12 @@ export function enableNavElms() {
         el.disabled = false;
     })
 }
+
+// export function enabledDisableNavElmsWrapper(fn: () => any) {
+//     try {
+//         disableNavElms()
+//         fn()
+//     } finally {
+//         enableNavElms()
+//     }
+// }

@@ -20,17 +20,18 @@ export default class State {
   exps: api.exps.ParsedExp[] = [];
   selectedDsMetadata: object = {};
   errTypes: string[] = [];
+  errHigherBetter: api.err.ErrHigherBetter = {};
   zerow: boolean = false; // always draw 0 watts line and start from it
 
   // nullable/undefined attrs
   fig: Fig | null = null
-  private _selectedExp: api.exps.ParsedExp | undefined = undefined;
   fullDataDatetimeRange: api.datetime.DatetimeRange | null = null;
   lastErrors: PredictionErrorsObj = {};
   autoPredictTimeout: ReturnType<typeof setTimeout> | undefined = undefined;
   snapshots: Snapshot[] = [];
   currErrHistResponse: api.err.ErrHistResponse | null = null;
   stdWatts: api.std.StdWattsResponse | null = null;
+  private _selectedExp: api.exps.ParsedExp | undefined = undefined;
   private _originalTracesData: TraceData[] = []; // unmodified traces
 
   // for zooming
@@ -50,6 +51,7 @@ export default class State {
   async setup() {
     this.exps = await api.exps.getAll();
     this.errTypes = await api.err.getErrTypes();
+    this.errHigherBetter = await api.err.getHigherBetter();
   }
 
   reset() {
@@ -57,21 +59,23 @@ export default class State {
   }
 
 
-  async setSelectedExp(newExp: api.exps.ParsedExp) {
+  async setSelectedExp(newExp: api.exps.ParsedExp | undefined) {
     this._selectedExp = newExp;
-    this.selectedDsMetadata = await api.ds_info.getDsMetadata({ ds: newExp.dataset });
+    if (newExp !== undefined) {
+      this.selectedDsMetadata = await api.ds_info.getDsMetadata({ ds: newExp.dataset });
+    }
   }
 
   async setSelectedDatetime(
-    startDatetime: datetime.SimpleDateString,
-    endDatetime: datetime.SimpleDateString,
+    startDatetime: datetime.SimpleDateTimeString,
+    endDatetime: datetime.SimpleDateTimeString,
     durationSamples: number,
   ) {
     if (this._selectedExp === undefined) {
       throw new Error("selectedExp is undefined");
     }
 
-    // udpate section type 
+    // udpate section type
 
     // train or test?
     // logic: train or test if the same dataset used in the exp)
@@ -87,26 +91,32 @@ export default class State {
       ts: startDatetime,
       exp_name: this._selectedExp.exp_name,
     });
-    this.elms.data.info.dayname.innerText = this.selectedDayInfo.day_name;
-    this.elms.data.info.weekend.innerText = this.selectedDayInfo.weekend ? "Weekend" : "Not weekend";
-
-    if (this.selectedDayInfo.holiday) {
-      this.elms.data.info.holiday.innerText = `Holiday: ${this.selectedDayInfo.holiday_name}`;
+    if (this.selectedDayInfo.err) {
+      this.elms.data.info.dayname.innerText = "Error";
+      console.error(this.selectedDayInfo.err_msg);
     } else {
-      this.elms.data.info.holiday.innerText = "Not a holiday";
-    }
+      // assert this.selectedDayInfo.day_name is string
+      if (typeof this.selectedDayInfo.day_name !== "string") {
+        throw new Error("day_name is not a string");
+      }
 
+      this.elms.data.info.dayname.innerText = this.selectedDayInfo.day_name;
+      this.elms.data.info.weekend.innerText = this.selectedDayInfo.weekend ? "Weekend" : "Not weekend";
+
+      if (this.selectedDayInfo.holiday) {
+        this.elms.data.info.holiday.innerText = `Holiday: ${this.selectedDayInfo.holiday_name}`;
+      } else {
+        this.elms.data.info.holiday.innerText = "Not a holiday";
+      }
+    }
 
     this._selectedDatetimeRange = { start: startDatetime, end: endDatetime };
     this._selectedDurationSamples = durationSamples;
-  }
 
-  getUniqueDatasets(): string[] {
-    const uniqueDatasets = new Set<string>();
-    for (const datasetHouse of this.exps) {
-      uniqueDatasets.add(datasetHouse.dataset);
-    }
-    return Array.from(uniqueDatasets);
+    // adapt date and time pickers
+    this.elms.data.pick.date.value = startDatetime.split("T")[0];
+    this.elms.data.pick.startTime.value = startDatetime.split("T")[1].split(".")[0];
+    this.elms.data.pick.durationSamples.value = durationSamples.toString();
   }
 
   async getSampleDurationInSeconds() {
@@ -157,6 +167,13 @@ export default class State {
     }
 
     return traces;
+  }
+
+  isModelExpSelected(): boolean {
+    if (this._selectedExp === undefined) {
+      return false;
+    }
+    return this._selectedExp.type === api.exps.ExpType.ModelExp;
   }
 
   // get or throw

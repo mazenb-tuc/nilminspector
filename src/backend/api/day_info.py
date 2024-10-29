@@ -24,12 +24,14 @@ class DayInfoParams(BaseModel):
 
 
 class DayInfoResponse(BaseModel):
-    holiday: bool
-    holiday_name: Optional[str]
-    day_name: str
-    weekend: bool
-    sunrise: Optional[PDTimestamp]
-    sunset: Optional[PDTimestamp]
+    err: bool = False
+    holiday: Optional[bool] = None
+    holiday_name: Optional[str] = None
+    day_name: Optional[str] = None
+    weekend: Optional[bool] = None
+    sunrise: Optional[PDTimestamp] = None
+    sunset: Optional[PDTimestamp] = None
+    err_msg: Optional[str] = None
 
 
 @router.post("/")
@@ -39,16 +41,19 @@ async def get_day_info(params: DayInfoParams) -> DayInfoResponse:
 
     # timestamp with tz info from data
     ds = exp.dataset
-    enilm_ds = get_dataset_by_name(ds)
-    ds_tz = get_tzinfo_from_ds(enilm_ds)
-    ts = tz.convert_pdtimestamp(params.ts, ds_tz)
+    try:
+        enilm_ds = get_dataset_by_name(ds)
+        ds_tz = get_tzinfo_from_ds(enilm_ds)
+        ts = tz.convert_pdtimestamp(params.ts, ds_tz)
+    except Exception as e:
+        return DayInfoResponse(err=True, err_msg=str(e))
 
     @exp_mem.cache
-    def get_exp_holidays_cal() -> holidays.HolidayBase:
+    def get_exp_holidays_cal(ds) -> holidays.HolidayBase:
         holiday_cal = get_holidays_calendar_from_ds(ds)
         return holiday_cal
 
-    cal = get_exp_holidays_cal()
+    cal = get_exp_holidays_cal(ds)
     holiday = cal.get(ts.date())
     suntimes = get_suntimes_for_day(ts, enilm_ds)
 

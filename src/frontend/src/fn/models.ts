@@ -2,16 +2,46 @@ import State from "@/classes/state"
 import Elms from "@/classes/elms"
 import Canvas from "@/classes/canvas"
 
+import * as api from "@/api"
+
 export function setModelsForDatasetHouseApp(elms: Elms, state: State) {
     // clear previous models' options
     elms.prediction.model.innerHTML = "";
 
     // for each exp -> model
     for (const exp of state.exps) {
+        // exp with a model
+        if (exp.type !== api.exps.ExpType.ModelExp) continue;
+        const model_exp = exp as api.exps.ParsedModelExp;
+
+        // same appliance
+        if (model_exp.app.toLocaleLowerCase() !== elms.data.app.value.toLocaleLowerCase()) continue;
+
         const option = document.createElement("option");
-        option.value = exp.exp_name;
-        option.text = `${exp.exp_name} - ${exp.model_name} - ${exp.dataset} - ${exp.house} - ${exp.app}`;
+        option.value = model_exp.exp_name;
+        option.text = `${model_exp.exp_name} - ${model_exp.model_name} - ${model_exp.dataset} - ${model_exp.house} - ${model_exp.app}`;
         elms.prediction.model.add(option);
+    }
+
+    // if no models found
+    if (elms.prediction.model.length === 0) {
+        // add dummy option
+        const option = document.createElement("option");
+        option.value = "";
+        option.text = "No models found for selection";
+        elms.prediction.model.add(option);
+
+        // disable model selection button
+        elms.prediction.selectExpModel.classList.add("navExclude");
+        elms.prediction.selectExpModel.disabled = true;
+
+        // disable prediction button
+        elms.prediction.predict.classList.add("navExclude");
+        elms.prediction.predict.disabled = true;
+    } else {
+        // enable nav to control the buttons
+        elms.prediction.selectExpModel.classList.remove("navExclude");
+        elms.prediction.predict.classList.remove("navExclude");
     }
 
     // sort options by name

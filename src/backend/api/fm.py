@@ -3,25 +3,28 @@
 from typing import Dict
 
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import torch
 from torch import nn
 import numpy as np
 from scipy.interpolate import interp1d
+from loguru import logger
 
 from ..types import RawDataDict, NPArray_1D, NPArray_2D
-from ..model import get_model_for_exp, device
+from ..model import get_model_for_exp
+from ..utils import get_device
 from .. import exps
 
 router = APIRouter(prefix="/fm")
 
 
 class GetFeatureMapParams(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     input_data: RawDataDict
     model_exp: str
     transposed: bool = False
-    resample: bool = False # TODO: implement
-    average: bool = True # TODO: implement
+    resample: bool = False  # TODO: implement
+    average: bool = True  # TODO: implement
 
 
 class GetFeatureMapResponse(BaseModel):
@@ -31,10 +34,9 @@ class GetFeatureMapResponse(BaseModel):
 
 def downsample_avg(data, new_size):
     data_array = np.array(data)
-    
     # calculate the ratio of the old length to the new length
     ratios = np.linspace(0, len(data), num=new_size + 1, endpoint=True)
-    
+
     # initialize the result array
     result = np.zeros(new_size)
 
@@ -56,10 +58,11 @@ def upsample(data, new_size):
 
 
 @router.post("/")
-async def get_feature_map(params: GetFeatureMapParams) -> GetFeatureMapResponse:    
+async def get_feature_map(params: GetFeatureMapParams) -> GetFeatureMapResponse:
     # load model of the exp
-    exp: exps.Exp = exps.get_exp_by_name(params.model_exp)
-    model: nn.Module = get_model_for_exp(params.model_exp)
+    exp: exps.ModelExp = exps.get_model_exp_by_name(params.model_exp)
+    device: torch.device = get_device()
+    model: nn.Module = get_model_for_exp(params.model_exp, device)
     model.eval()
 
     # prepare the input data: upsample or downsample to the expected sequence length
@@ -90,9 +93,14 @@ async def get_feature_map(params: GetFeatureMapParams) -> GetFeatureMapResponse:
         return hook
 
     # register hooks on the convolution layers
+    conv_layer_count = 0
     for layer in model.children():
-        if isinstance(layer, nn.Conv1d):
-            layer.register_forward_hook(get_activation(layer.name))
+        if isinstance(layer, nn.Conv1d) or isinstance(layer, nn.Conv2d):
+            conv_layer_count += 1
+            layer.register_forward_hook(get_activation(f"conv{conv_layer_count}"))
+        if isinstance(layer, nn.Conv2d):
+            # TODO
+            logger.warning("Model with 2D Conver layers is not tested yet!")
 
     # perform a forward pass with the input tensor
     preds = model(input_tensor).detach()
@@ -105,7 +113,7 @@ async def get_feature_map(params: GetFeatureMapParams) -> GetFeatureMapResponse:
     activation = {k: v.cpu().numpy().squeeze() for k, v in activation.items()}
     if params.transposed:
         activation = {k: v.T for k, v in activation.items()}
-        
+
     return GetFeatureMapResponse(
         activation=activation,
         preds=preds,

@@ -1,4 +1,4 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 
 // backend.api.std.StdWattsParams
 export interface StdWattsParams {

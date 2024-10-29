@@ -1,15 +1,17 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as datetime from "@/utils/datetime";
 
 // backend.api.data.DatetimeRangeParams
 export interface DatetimeRangeParams {
-    exp_name: string;
+    dataset: string;
+    house: number;
+    app: string;
 }
 
 // backend.api.data.DatetimeRange
 export interface DatetimeRange {
-    start: datetime.SimpleDateString;
-    end: datetime.SimpleDateString;
+    start: datetime.SimpleDateTimeString;
+    end: datetime.SimpleDateTimeString;
 }
 
 export async function getDatetimeRange(params: DatetimeRangeParams): Promise<DatetimeRange> {
@@ -23,7 +25,7 @@ export async function getDatetimeRange(params: DatetimeRangeParams): Promise<Dat
     });
     const respObj = await resp.json();
     return {
-        start: datetime.isoDateStringToSimpleDateString(respObj.start),
-        end: datetime.isoDateStringToSimpleDateString(respObj.end),
+        start: datetime.isoToSimple(respObj.start),
+        end: datetime.isoToSimple(respObj.end),
     } as DatetimeRange;
 }

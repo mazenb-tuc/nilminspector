@@ -28,7 +28,7 @@ class StdWattsResponse(BaseModel):
 async def getStdWatts(params: StdWattsParams) -> StdWattsResponse:
     memory: joblib.Memory = joblib.Memory(cache_folder / "std_watts", verbose=1)
 
-    @memory.cache()
+    @memory.cache
     def get_std_watts(params: StdWattsParams) -> StdWattsResponse:
         data = get_data(params.data_exp_name).resampled_data
         assert params.app_name in data

@@ -1,9 +1,9 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as datetime from "@/utils/datetime";
 
 // backend.api.fm.GetFeatureMapParams
 interface GetFeatureMapParams {
-    input_data: datetime.SimpleDateStringStampedData;
+    input_data: datetime.SimpleDateTimeStringStampedData;
     model_exp: string;
     transposed: boolean;
 }

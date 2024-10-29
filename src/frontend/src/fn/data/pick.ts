@@ -4,6 +4,7 @@ import Canvas from "@/classes/canvas"
 
 import * as plot from "./plot"
 import * as datetime from "@/utils/datetime"
+import * as api from "@/api"
 
 export const getData = async (state: State, elms: Elms): Promise<boolean> => {
     // return true, if data is successfully fetched
@@ -46,9 +47,12 @@ export const getData = async (state: State, elms: Elms): Promise<boolean> => {
         return false;
     }
     const selectedExp = state.getSelectedExpOrThrow()
-    if (durationSamples < selectedExp.sequence_length) {
-        alert(`Duration must be greater than one window of data (${state.getSelectedExpOrThrow().sequence_length} samples)`);
-        return false;
+    if (selectedExp.type === api.exps.ExpType.ModelExp) {
+        const selectedModelExp = selectedExp as api.exps.ParsedModelExp
+        if (durationSamples < selectedModelExp.sequence_length) {
+            alert(`Duration must be greater than one window of data (${selectedModelExp.sequence_length} samples)`);
+            return false;
+        }
     }
 
     // selected datetime into one date object
@@ -57,7 +61,7 @@ export const getData = async (state: State, elms: Elms): Promise<boolean> => {
     await state.setSelectedDatetime(
         simpleDatetimeStr,
         // new Date(datetime.getTime() + durationMS)
-        datetime.isoDateStringToSimpleDateString(new Date(new Date(simpleDatetimeStr).getTime() + durationMS).toISOString()),
+        datetime.isoToSimple(new Date(new Date(simpleDatetimeStr).getTime() + durationMS).toISOString()),
         durationSamples,
     );
 

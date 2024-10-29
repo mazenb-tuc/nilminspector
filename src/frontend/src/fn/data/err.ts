@@ -6,6 +6,7 @@ import Canvas from "@/classes/canvas";
 import * as api from "@/api"
 import * as  colors from "@/utils/colors";
 import * as nav from "@/utils/nav"
+import CustomEventNames from "@/utils/events";
 
 import { originalTraces } from "./plot";
 
@@ -14,7 +15,10 @@ const selectedBarColor = '#DB4437';
 
 function drawHist(elms: Elms, state: State) {
     // ensure the response is not null
-    if (state.currErrHistResponse === null) {
+    if (state.currErrHistResponse === null || state.currErrHistResponse === undefined) {
+        return;
+    }
+    if (state.currErrHistResponse.hist === null || state.currErrHistResponse.hist === undefined) {
         return;
     }
 
@@ -63,7 +67,7 @@ function drawHist(elms: Elms, state: State) {
     }
 }
 
-export async function updateErrHist(elms: Elms, state: State) {
+async function updateErrHist(elms: Elms, state: State) {
     nav.disableNavElms();
 
     // disable err elements
@@ -78,7 +82,7 @@ export async function updateErrHist(elms: Elms, state: State) {
 
     // get hist data from backend
     const errHistResponse = await api.err.getErrHist({
-        data_exp_name: elms.data.exp.value,
+        data_exp_name: elms.data.exp_name.value,
         app_name: elms.data.app.value,
         err_type: "MAE",
         bins: numErrBins,
@@ -100,6 +104,9 @@ async function get(state: State, canvas: Canvas, elms: Elms) {
     canvas.setLoading();
     nav.disableNavElms();
 
+    // vars
+    const app_name = elms.data.app.value;
+
     // get selected error range
     const selectedBin = parseInt(elms.data.err.errBin.value);
     const errRange = {
@@ -110,31 +117,36 @@ async function get(state: State, canvas: Canvas, elms: Elms) {
         throw new Error("Error range is undefined");
     }
 
-    const commonAppDataParams = {
-        data_exp_name: elms.data.exp.value,
+    // get start and end dates with error in the selected range
+    const rndErrDateWithErrParams: api.err.RndDateWithErrParams = {
+        exp_name: elms.data.exp_name.value,
+        app_name,
         err_type: "MAE",
         err_min: errRange.min,
         err_max: errRange.max,
         duration_samples: parseInt(elms.data.err.durationSamples.value),
     }
-    const dataParams: api.err.RndDataWithErrParams[] = [
-        {
-            ...commonAppDataParams,
-            app_name: "mains",
-        },
-        {
-            ...commonAppDataParams,
-            app_name: elms.data.app.value,
-        }
-    ];
+    const rndErrDateWithErrResponse = await api.err.getRndDateWithErr(rndErrDateWithErrParams);
+
+    const commonGetDataStartEndParams = {
+        start: rndErrDateWithErrResponse.start_date,
+        end: rndErrDateWithErrResponse.end_date,
+        exp_name: elms.data.exp_name.value,
+    }
 
     const traces: Trace[] = [];
-    for (let i = 0; i < dataParams.length; i++) {
-        const { data, err, err_msg } = await api.err.getRndDataWithErr(dataParams[i]);
-        if (err) {
-            throw new Error(err_msg);
-        }
-        const trace = new Trace(0, dataParams[i].app_name, data, colors.getMatplotlibColor(i));
+
+    // mains
+    {
+        const data = await api.data.getDataStartEnd({ app_name: "mains", ...commonGetDataStartEndParams });
+        const trace = new Trace(0, "mains", data, colors.getMatplotlibColor(0));
+        traces.push(trace);
+    }
+
+    // app
+    {
+        const data = await api.data.getDataStartEnd({ app_name, ...commonGetDataStartEndParams });
+        const trace = new Trace(0, app_name, data, colors.getMatplotlibColor(1));
         traces.push(trace);
     }
 
@@ -155,12 +167,31 @@ function canvasClickHandler(event: MouseEvent, elms: Elms, state: State) {
 
 export async function setupListeners(state: State, canvas: Canvas, elms: Elms) {
     elms.data.err.errHistCanvas.addEventListener("click", (event) => {
+        if (!state.isModelExpSelected()) return;
         canvasClickHandler(event, elms, state)
     })
-    elms.data.err.numErrBins.addEventListener("change", () => updateErrHist(elms, state))
-    elms.data.err.errBin.addEventListener("change", () => drawHist(elms, state))
+
+    elms.data.err.numErrBins.addEventListener("change", () => {
+        if (!state.isModelExpSelected()) return;
+        updateErrHist(elms, state)
+    })
+
+    elms.data.err.errBin.addEventListener("change", () => {
+        if (!state.isModelExpSelected()) return;
+        drawHist(elms, state)
+    })
+
     elms.data.err.get.addEventListener("click", async () => {
+        if (!state.isModelExpSelected()) return;
         await get(state, canvas, elms)
         await originalTraces(state, canvas, elms);
     });
+
+    // update hist upon selection iff the selected exp has a model
+    window.addEventListener(
+        CustomEventNames.NEW_EXP_SELECTED,
+        async () => {
+            if (!state.isModelExpSelected()) return;
+            await updateErrHist(elms, state);
+        })
 }

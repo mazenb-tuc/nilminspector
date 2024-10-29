@@ -41,10 +41,10 @@
                 <select id="app"></select>
               </div>
 
-              <!-- Exp -->
+              <!-- Experiment Name -->
               <div>
-                <label for="exp">Exp</label>
-                <select id="exp"></select>
+                <label for="exp_name">Experiment</label>
+                <select id="exp_name"></select>
               </div>
             </div>
 
@@ -123,6 +123,12 @@
           </div>
         </div>
 
+        <!-- Progress Bar -->
+        <div>
+          <span id="pbarTitle"></span>
+          <progress style="width: 100%; display: none" id="pbar" value="100" max="100"></progress>
+        </div>
+
         <div style="display: flex; gap: 1em">
           <canvas id="pltCanvas" width="800" height="600"></canvas>
 
@@ -143,6 +149,35 @@
           </summary>
 
           <div id="expInfo"></div>
+        </details>
+
+        <!-- Data Overview -->
+        <details>
+          <summary>
+            <h3>Data Overview</h3>
+          </summary>
+
+          <!-- Daily Activity over a year -->
+          <div>
+            <h4>Daily Activity</h4>
+
+            <!-- Select year -->
+            <div>
+              <select id="dailyActivityYearSelect"></select>
+            </div>
+
+            <!-- Plot Mains -->
+            <div>
+              <h5>Mains</h5>
+              <div id="dailyActivityYearPlotDiv"></div>
+            </div>
+
+            <!-- Plot App -->
+            <div>
+              <h5>App</h5>
+              <div id="appDailyActivityYearPlotDiv"></div>
+            </div>
+          </div>
         </details>
 
         <!-- Data with Error -->
@@ -194,6 +229,12 @@
               <input type="number" id="errBin" step="1" min="0" value="100" />
             </div>
 
+            <!-- Log scale -->
+            <div>
+              <input type="checkbox" id="errHistLogScaleToggle" />
+              <label for="errHistLogScaleToggle">Log Scale</label>
+            </div>
+
             <!-- Info about selected bin -->
             <div id="errBinInfo">
               <!-- Selected error range -->
@@ -221,11 +262,60 @@
             <h3>Data Modification</h3>
           </summary>
 
-          <!-- Mains data -->
           <div>
-            <input type="checkbox" id="modifyMains" />
-            <label for="modifyMains">Mains</label>
+            <!-- Mains data -->
+            <h4>Mains</h4>
+
+            <!-- Modify -->
+            <div>
+              <input type="checkbox" id="modifyMains" />
+              <label for="modifyMains">Toggle</label>
+            </div>
+
+            <!-- Noise -->
+            <div>
+              <input type="checkbox" id="modifyMainsAddNoise" />
+              <label for="modifyMainsAddNoise">Add Noise</label>
+            </div>
+
+            <div>
+              <input type="checkbox" id="modifyMainsRemoveNoise" />
+              <label for="modifyMainsRemoveNoise">Remove Noise</label>
+            </div>
+
+            <!-- Reset -->
             <button id="resetMains">Reset</button>
+          </div>
+
+          <div>
+            <!-- GT data -->
+            <h4>Ground Truth</h4>
+
+            <!-- Modify -->
+            <div>
+              <input type="checkbox" id="modifyGt" />
+              <label for="modifyGt">Toggle</label>
+            </div>
+
+            <!-- Automatically modify mains too? -->
+            <div>
+              <input type="checkbox" id="modifyGtAutoModifyMains" checked />
+              <label for="modifyGtAutoModifyMains">Auto modify mains</label>
+            </div>
+
+            <!-- Noise -->
+            <div>
+              <input type="checkbox" id="modifyGtAddNoise" />
+              <label for="modifyGtAddNoise">Add Noise</label>
+            </div>
+
+            <div>
+              <input type="checkbox" id="modifyGtRemoveNoise" />
+              <label for="modifyGtRemoveNoise">Remove Noise</label>
+            </div>
+
+            <!-- Reset -->
+            <button id="resetGt">Reset</button>
           </div>
         </details>
 
@@ -348,6 +438,12 @@
             <h3>Feature Maps</h3>
           </summary>
 
+          <!-- Show on top of the plot -->
+          <div>
+            <input type="checkbox" id="showFmOnTop" />
+            <label for="showFmOnTop">Show on top</label>
+          </div>
+
           <!-- Size -->
           <div>
             <label for="fmWidth">Width</label>
@@ -381,22 +477,68 @@
             <h3>Plot control</h3>
           </summary>
 
-          <!-- Logarithmic scale -->
-          <div>
-            <input type="checkbox" id="logScale" />
-            <label for="logScale">Logarithmic scale</label>
-          </div>
-
           <!-- Line width -->
           <div>
             <label for="lineWidth">Line width</label>
             <input type="number" id="lineWidth" step="1" value="1" />
           </div>
 
+          <!-- Load defaults button -->
+          <details>
+            <summary>
+              <h4>Load & Save Settings</h4>
+            </summary>
+
+            <!-- Selector -->
+            <select id="settingsSelector"></select>
+
+            <!-- Load  -->
+            <button id="loadSettingsBtn">Load</button>
+
+            <!-- TODO: Save -->
+            <button id="saveSettingsBtn">Save</button>
+          </details>
+
+          <!-- Markers -->
+          <details id="markers">
+            <summary>
+              <h4>Markers</h4>
+            </summary>
+
+            <!-- Toggle Markers -->
+            <div>
+              <input type="checkbox" name="markersToggle" id="markersToggle">
+              <label for="markersToggle">Toggle</label>
+            </div>
+          </details>
+
+          <!-- Logarithmic scale -->
+          <details id="logScaling">
+            <summary>
+              <h4>Logarithmic scale</h4>
+            </summary>
+
+            <div>
+              <input type="checkbox" name="logScaleToggle" id="logScaleToggle">
+              <label for="logScaleToggle">Toggle</label>
+            </div>
+
+            <fieldset id="logScaleBase">
+              <legend>Choose base</legend>
+
+              <input type="radio" name="logScaleBase" id="logScaleBaseNatural" checked>
+              <label for="logScaleBaseNatural">Base e</label>
+
+              <input type="radio" name="logScaleBase" id="logScaleBaseDecimal">
+              <label for="logScaleBaseDecimal">Base 10</label>
+            </fieldset>
+          </details>
 
           <!-- Canvas size -->
-          <div id="resizeCanvas">
-            <h4>Canvas size</h4>
+          <details id="resizeCanvas">
+            <summary>
+              <h4>Canvas size</h4>
+            </summary>
 
             <div>
               <!-- Width -->
@@ -408,11 +550,14 @@
               <label for="canvasHeight">Height</label>
               <input type="number" id="canvasHeight" step="10" />
             </div>
-          </div>
+          </details>
 
           <!-- Padding -->
-          <div>
-            <h4>Padding</h4>
+          <details>
+            <summary>
+              <h4>Padding</h4>
+            </summary>
+
             <!-- Buttom -->
             <div>
               <label for="paddingButtom">Padding bottom</label>
@@ -433,10 +578,14 @@
               <label for="paddingRight">Padding right</label>
               <input type="number" id="paddingRight" step="1" value="0" />
             </div>
-          </div>
+          </details>
+
           <!-- Labels -->
-          <div>
-            <h4>Labels</h4>
+          <details>
+            <summary>
+              <h4>Labels</h4>
+            </summary>
+
             <!-- Font size -->
             <div>
               <label for="labelsFontSize">Labels font size</label>
@@ -474,7 +623,7 @@
                   line</label>
               </div>
             </div>
-          </div>
+          </details>
         </details>
       </div>
     </div>

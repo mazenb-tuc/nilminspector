@@ -1,11 +1,42 @@
 import State from "@/classes/state"
 import Elms from "@/classes/elms"
 
+import * as api from "@/api";
+import * as exps from "@/fn/exps";
 import objectToHtmlList from "@/utils/objToHtml"
+import CustomEventNames from "@/utils/events";
 
-
-export function updateExpInfo(elms: Elms, state: State) {
+function updateExpInfo(elms: Elms, state: State) {
     const selectedExp = state.getSelectedExpOrThrow()
+
+    // list items for ModelExp
+    let modelExpItems: string | undefined = undefined;
+    if (selectedExp.type === api.exps.ExpType.ModelExp) {
+        const modelExp = selectedExp as api.exps.ParsedModelExp;
+        modelExpItems = `
+        <li><b>Selected Model Weights:</b> ${modelExp.selected_model_weights}</li>
+            <li><b>Sequence Length:</b> ${modelExp.sequence_length}</li>
+            <li><b>Train Percent:</b> ${modelExp.selected_train_percent * 100}%</li>
+            <li><b>Batch Size:</b> ${modelExp.batch_size}</li>
+            <li><b>Num Epochs:</b> ${modelExp.num_epochs}</li>
+            <li><b>Model Name:</b> ${modelExp.model_name}</li>
+            <li><b>On Power Threshold:</b> ${modelExp.on_power_threshold}</li>
+            <li><details><summary>Classes:</summary>
+                <ul>
+                    <li><b>Model:</b><pre>${modelExp.model_class}</pre></li>
+                    <li><b>Dataset:</b><pre>${modelExp.ds_class}</pre></li>
+                </ul>
+            </details></li>
+            <li><details><summary>Train/Test Dates:</summary>
+                <ul>
+                    <li><b>Train Start:</b> ${modelExp.train_start}</li>
+                    <li><b>Train End:</b> ${modelExp.train_end}</li>
+                    <li><b>Test Start:</b> ${modelExp.test_start}</li>
+                    <li><b>Test End:</b> ${modelExp.test_end}</li>
+                </ul>
+            </details></li>
+            `
+    }
 
     elms.expInfo.innerHTML = `
         <ul>
@@ -27,8 +58,6 @@ export function updateExpInfo(elms: Elms, state: State) {
                     <li><b>Std:</b> ${selectedExp.app_norm_params[1].toFixed(2)}</li>
                 </ul>
             </details></li>
-            <li><b>Selected Model Weights:</b> ${selectedExp.selected_model_weights}</li>
-            <li><b>Sequence Length:</b> ${selectedExp.sequence_length}</li>
             <li><details><summary>Selected AC Type:</summary>
                 <ul>
                     <li><b>Mains:</b> ${selectedExp.selected_ac_type.mains}</li>
@@ -42,63 +71,77 @@ export function updateExpInfo(elms: Elms, state: State) {
                     <li><b>Fill:</b> ${selectedExp.resample_params.fill}</li>
                 </ul>
             </details></li>
-            <li><b>Train Percent:</b> ${selectedExp.selected_train_percent * 100}%</li>
-            <li><b>Batch Size:</b> ${selectedExp.batch_size}</li>
-            <li><b>Num Epochs:</b> ${selectedExp.num_epochs}</li>
-            <li><b>Model Name:</b> ${selectedExp.model_name}</li>
             <li><b>Description:</b> ${selectedExp.description}</li>
-            <li><b>On Power Threshold:</b> ${selectedExp.on_power_threshold}</li>
-            <li><b>Model Class:</b><pre>${selectedExp.model_class}</pre></li>
-            <li><b>Dataset Class:</b><pre>${selectedExp.ds_class}</pre></li>
-            <li><details><summary>Train/Test Dates:</summary>
-                <ul>
-                    <li><b>Train Start:</b> ${selectedExp.train_start}</li>
-                    <li><b>Train End:</b> ${selectedExp.train_end}</li>
-                    <li><b>Test Start:</b> ${selectedExp.test_start}</li>
-                    <li><b>Test End:</b> ${selectedExp.test_end}</li>
-                </ul>
-            </details></li>
+            ${modelExpItems === undefined ? "" : modelExpItems}
         </ul>
     `
 }
 
-export async function setSelectedExp(elms: Elms, state: State) {
-    const expName = elms.data.exp.value
-
-    const selectedExp = state.exps.find(d => d.exp_name === expName)
-    if (selectedExp === undefined) {
-        alert("selectedExp is undefined")
-        return;
+export function getExpsForDsHouseApp(state: State, dataset: string, house: number, app: string, ignore_case: boolean = true): api.exps.ParsedExp[] {
+    if (ignore_case) {
+        dataset = dataset.toLowerCase();
+        app = app.toLowerCase();
     }
-    elms.data.exp.value = selectedExp.exp_name;
-    await state.setSelectedExp(selectedExp);
-}
 
-export async function setExpsForDatasetHouseApp(elms: Elms, state: State) {
-    const dataset = elms.data.dataset.value
-    const house = parseInt(elms.data.house.value)
-    const app = elms.data.app.value
-
-    // clear prev options
-    elms.data.exp.innerHTML = "";
-
-    // add new options
+    const result = [];
     for (const exp of state.exps) {
-        if (exp.dataset === dataset && exp.house === house && exp.app === app) {
-            const option = document.createElement("option");
-            option.value = exp.exp_name;
-            option.text = `${exp.exp_name} - ${exp.description}`
-            elms.data.exp.add(option);
+        let exp_dataset = exp.dataset;
+        let exp_app = exp.app;
+        if (ignore_case) {
+            exp_dataset = exp_dataset.toLowerCase();
+            exp_app = exp_app.toLowerCase();
+        }
+        if (exp_dataset === dataset && exp.house === house && exp_app === app) {
+            result.push(exp);
         }
     }
 
-    // select first
-    elms.data.exp.value = elms.data.exp.options[0].value;
+    return result;
+}
 
-    // set model to exp
-    elms.prediction.model.value = elms.data.exp.value;
+export async function setSelectedExp(elms: Elms, state: State) {
+    const selectedDataset = elms.data.dataset.value;
+    const selectedHouse = parseInt(elms.data.house.value);
+    const selectedApp = elms.data.app.value;
+    const selectedExpName = elms.data.exp_name.value;
 
-    // since the app selection is the last to uniquely identify an experiment, we can set the selected experiment here
-    await setSelectedExp(elms, state)
-    updateExpInfo(elms, state)
+    // find matching exp
+    let matchingExps: api.exps.ParsedExp[] = [];
+    for (const exp of exps.getExpsForDsHouseApp(state, selectedDataset, selectedHouse, selectedApp)) {
+        // found a match!
+        if (exp.exp_name === selectedExpName)
+            matchingExps.push(exp);
+    }
+
+    // no match found
+    if (matchingExps.length === 0) {
+        alert(`
+            No matching exp found for the selected:
+                dataset ${selectedDataset}
+                house ${selectedHouse}
+                app ${selectedApp}
+        `);
+        return;
+    }
+
+    // more than one match!
+    if (matchingExps.length > 1) {
+        alert(`
+            More than one matching exp found for the selected:
+                dataset ${selectedDataset}
+                house ${selectedHouse}
+                app ${selectedApp}
+                exp name ${selectedExpName}
+            Please check the exps data for duplicates.
+        `);
+        return;
+    }
+
+    const selectedExp = matchingExps[0];
+    await state.setSelectedExp(selectedExp);
+    updateExpInfo(elms, state);
+    window.dispatchEvent(new CustomEvent(
+        CustomEventNames.NEW_EXP_SELECTED,
+        { detail: selectedExp },
+    ));
 }

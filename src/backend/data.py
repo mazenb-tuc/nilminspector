@@ -25,7 +25,7 @@ def get_data(exp_name: str) -> GetDataResult:
     exp_mem = get_exp_mem(exp_name).memory
 
     @exp_mem.cache()
-    def inner_get_data(config):
+    def inner_get_data(config: enilm.yaml.config.Config) -> GetDataResult:
         raw_data: enilm.yaml.data.RawData = enilm.yaml.data.raw(config)
         resampled_data = enilm.yaml.data.resample(config)
         overlapping_data = enilm.yaml.data.overlapping(config)

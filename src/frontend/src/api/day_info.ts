@@ -1,6 +1,6 @@
 // backend.api.day_info
 
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as datetime from "@/utils/datetime";
 
 
@@ -11,12 +11,14 @@ interface DayInfoParams {
 
 
 export interface DayInfoResponse {
-    holiday: boolean;
+    err: boolean;
+    err_msg?: string;
+    holiday?: boolean;
     holiday_name?: string;
-    day_name: string;
-    weekend: boolean;
-    sunrise: datetime.SimpleDateString;
-    sunset: datetime.SimpleDateString;
+    day_name?: string;
+    weekend?: boolean;
+    sunrise?: datetime.SimpleDateTimeString;
+    sunset?: datetime.SimpleDateTimeString;
 }
 
 export async function get(params: DayInfoParams): Promise<DayInfoResponse> {
@@ -28,7 +30,11 @@ export async function get(params: DayInfoParams): Promise<DayInfoResponse> {
         body: JSON.stringify(params),
     });
     const data = await resp.json();
-    data.sunrise = datetime.isoDateStringToSimpleDateString(data.sunrise);
-    data.sunset = datetime.isoDateStringToSimpleDateString(data.sunset);
-    return data as DayInfoResponse;
+    if (data.err) {
+        return data as DayInfoResponse;
+    } else {
+        data.sunrise = datetime.isoToSimple(data.sunrise);
+        data.sunset = datetime.isoToSimple(data.sunset);
+        return data as DayInfoResponse;
+    }
 }

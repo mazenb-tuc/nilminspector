@@ -1,4 +1,4 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as map from "@/utils/map";
 
 import Elms from "./elms";
@@ -79,15 +79,6 @@ export default class Fig {
     ctx.font = `${labelsFontSize}px ${constants.canvasFontFamily}`;
     ctx.fillStyle = "black";
 
-    const getYForEng = (eng: number) =>
-      map.energyToCanvasY({
-        eng,
-        engMin: this.engMin,
-        engMax: this.engMax,
-        canvasYMin: this.canvas.plotArea.y.min,
-        canvasYMax: this.canvas.plotArea.y.max,
-      });
-
     // generate list of eng levels for each tick
     let engTicks = [];
     if (this.elms.plot.labels.every.startFromZeroW.checked) {
@@ -107,9 +98,26 @@ export default class Fig {
       }
     }
 
+    const getYForEng = (eng: number) =>
+      map.energyToCanvasY({
+        eng,
+        engMin: this.engMin,
+        engMax: this.engMax,
+        canvasYMin: this.canvas.plotArea.y.min,
+        canvasYMax: this.canvas.plotArea.y.max,
+        ...this.getLogOptions(),
+      });
+
+    let prevEngY: number = -Infinity;
     for (const eng of engTicks) {
       const y = getYForEng(eng);
       const roundedEng = Math.round(eng);
+
+      // skip line if distance to previous line is too small (i.e. < fontSize)
+      if (Math.abs(y - prevEngY) < labelsFontSize) {
+        continue;
+      }
+      prevEngY = y;
 
       // label (energy value) on the left
       const engStr = roundedEng.toString();
@@ -134,7 +142,7 @@ export default class Fig {
 
   private plotTraces() {
     this.traces.forEach((trace) => {
-      trace.plt(this.canvas, this.engMin, this.engMax);
+      trace.plt(this.canvas, this.engMin, this.engMax, this.getLogOptions());
       this.addLegendItem(trace.name, trace.color);
     });
   }
@@ -142,6 +150,22 @@ export default class Fig {
   private clearLegend() {
     this.elms.draw.legend.innerHTML = "";
   }
+
+  private getLogOptions(): { log_scale: boolean, log_scale_base: number } {
+    // base
+    let log_scale_base: number = Math.E;
+    if (this.elms.plot.logScale.base.natural.checked) {
+      log_scale_base = Math.E;
+    } else if (this.elms.plot.logScale.base.decimal.checked) {
+      log_scale_base = 10;
+    }
+
+    // toggle
+    const log_scale = this.elms.plot.logScale.toggle.checked;
+
+    return { log_scale, log_scale_base };
+  }
+
 
   private plotVLine(ctx: CanvasRenderingContext2D, watts: number, color: string) {
     ctx.strokeStyle = color;
@@ -151,6 +175,7 @@ export default class Fig {
       engMax: this.engMax,
       canvasYMin: this.canvas.plotArea.y.min,
       canvasYMax: this.canvas.plotArea.y.max,
+      ...this.getLogOptions(),
     });
     ctx.beginPath();
     ctx.moveTo(this.canvas.plotArea.x.min, y);
@@ -163,7 +188,7 @@ export default class Fig {
     if (this.elms.std.show.checked && this.state.stdWatts != null) {
       const ctx = this.canvas.ctx;
       ctx.setLineDash([5, 5]);
-      ctx.lineWidth = 1;
+      ctx.lineWidth = parseInt(this.elms.plot.lineWidth.value);
 
       this.plotVLine(ctx, this.state.stdWatts.lower, 'red');
       this.plotVLine(ctx, this.state.stdWatts.upper, 'red');
@@ -178,7 +203,7 @@ export default class Fig {
     if (this.elms.mean.show.checked && this.state.stdWatts != null) {
       const ctx = this.canvas.ctx;
       ctx.setLineDash([5, 5]);
-      ctx.lineWidth = 1;
+      ctx.lineWidth = parseInt(this.elms.plot.lineWidth.value);
 
       this.plotVLine(ctx, this.state.stdWatts.mean, 'gray');
 
@@ -196,6 +221,10 @@ export default class Fig {
     // do we have the required data?
     const dayInfo = this.state.selectedDayInfo;
     if (dayInfo === null || dayInfo.sunrise === null || dayInfo.sunset === null) {
+      return;
+    }
+    // check that dayInfo is of type api.day_info.DayInfoResponse
+    if (dayInfo.sunrise === undefined || dayInfo.sunset === undefined) {
       return;
     }
     const mainsTrace = this.getTraceByName("mains")

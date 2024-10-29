@@ -8,6 +8,7 @@ import * as api from "@/api";
 import * as colors from "@/utils/colors";
 import * as nav from "@/utils/nav";
 import { updateModelInfo } from "./models";
+import { TaskState } from "@/types/tasks";
 
 export async function predict(state: State, canvas: Canvas, elms: Elms) {
     nav.disableNavElms()
@@ -18,9 +19,29 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
     if (mainsTrace?.data === undefined) return;
 
     // check that the data is long enough (i.e. > seq length)
-    const selectedExp = state.getSelectedExpOrThrow()
-    if (Object.keys(mainsTrace?.data).length < selectedExp.sequence_length) {
-        alert(`Data is too short for prediction (need at least ${selectedExp.sequence_length} points)`);
+    const selectedModelExpName = elms.prediction.model.value;
+    if (selectedModelExpName === "") {
+        alert("Select a model to predict with");
+        nav.enableNavElms();
+        return;
+    }
+    const selectedExp = state.exps.find((exp) => exp.exp_name === selectedModelExpName);
+    if (selectedExp === undefined) {
+        alert("Selected experiment not found");
+        nav.enableNavElms();
+        return;
+    }
+
+    // must be a modelexp
+    if (selectedExp.type !== api.exps.ExpType.ModelExp) {
+        alert("Selected experiment is not a model experiment (i.e. does not have a trained model)");
+        nav.enableNavElms();
+        return;
+    }
+    const selectedModelExp = selectedExp as api.exps.ParsedModelExp;
+
+    if (Object.keys(mainsTrace?.data).length < selectedModelExp.sequence_length) {
+        alert(`Data is too short for prediction (need at least ${selectedModelExp.sequence_length} points)`);
         return;
     }
 
@@ -49,12 +70,30 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
 
     // prediction from mains
     canvas.setLoading();
-    const predictionResponse = await api.predict.getPrediction({
+    const pred_params: api.predict.PredictParams = {
         data: mainsTrace?.data,
         app_name: gtTrace?.name,
         gt: gtTrace?.data,
         model_exp_name: elms.prediction.model.value,
-    });
+    }
+    // const predictionResponse = await api.predict.getPrediction(pred_params);
+    const pred_async_resp: api.predict.AsyncResponse = await api.predict.getAsyncPrediction(pred_params);
+    while (true) {
+        await new Promise(r => setTimeout(r, 100));
+        const pred_status: api.predict.PredProgressResponse = await api.predict.getAsyncPredictionProgress(pred_async_resp.task_id);
+        elms.pbar.title.textContent = "Predicting...";
+        elms.pbar.bar.style.display = 'block';
+        elms.pbar.bar.value = pred_status.msg.percentage;
+
+        if (pred_status.state === TaskState.SUCCESS)
+            break;
+        if (pred_status.state === TaskState.FAILED)
+            break;
+    }
+    elms.pbar.bar.style.display = 'none';
+    elms.pbar.title.textContent = "";
+
+    const predictionResponse = await api.predict.getAsyncPredictionResults(pred_async_resp.task_id);
     const predTrace = new Trace(1, `${elms.data.app.value} pred`, predictionResponse.pred, colors.getMatplotlibColor(newTraces.length));
 
     // prediction error info
@@ -70,34 +109,32 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
             newErrors[error.name] = error;
 
             if (state.lastErrors && Object.keys(state.lastErrors).length > 0) {
-                // for MAE: show change to previous error if exists and abs difference is bigger than 0.01
-                if (error.name === "MAE") {
-                    const prevError = state.lastErrors[error.name];
-                    if (Math.abs(error.value - prevError.value) > 0.01) {
-                        const span = document.createElement("span");
-                        span.classList.add("ephemeral"); // should be saved in the snapshot
-                        span.style.color = error.value > prevError.value ? "red" : "green";
-                        const diff = Math.abs(error.value - prevError.value);
-                        const diffSign = diff < 0 ? "+" : "-";
-                        const textNode = document.createTextNode(` (${diffSign}${diff.toFixed(2)} ${error.unit})`)
-                        span.appendChild(textNode);
-                        li.appendChild(span);
-                    }
-                }
+                // show change to previous error if exists and abs difference is bigger than 0.01
+                const prevError = state.lastErrors[error.name];
+                if (Math.abs(error.value - prevError.value) > 0.01) {
+                    const span = document.createElement("span");
+                    span.classList.add("ephemeral"); // should be saved in the snapshot
 
-                // for F1: show change to previous error if exists and abs difference is bigger than 0.1
-                else if (error.name === "F1" && state.lastErrors) {
-                    const prevError = state.lastErrors[error.name];
-                    if (Math.abs(error.value - prevError.value) > 0.1) {
-                        const span = document.createElement("span");
-                        span.classList.add("ephemeral"); // should be saved in the snapshot
-                        span.style.color = error.value < prevError.value ? "red" : "green";
-                        const diff = Math.abs(error.value - prevError.value);
-                        const diffSign = diff < 0 ? "+" : "-";
-                        const textNode = document.createTextNode(` (${diffSign}${diff.toFixed(2)} ${error.unit})`)
-                        span.appendChild(textNode);
-                        li.appendChild(span);
+                    if (!state.errHigherBetter.hasOwnProperty(error.name)) {
+                        alert(`Error type ${error.name} not found in state.errHigherBetter`)
                     }
+
+                    if (state.errHigherBetter[error.name]) {
+                        span.style.color = error.value > prevError.value ? "green" : "red";
+                    } else {
+                        span.style.color = error.value > prevError.value ? "red" : "green";
+                    }
+
+                    const diff = Math.abs(error.value - prevError.value);
+                    const diffSign = error.value - prevError.value > 0 ? "+" : "-";
+                    const diffTxt = `${diffSign}${diff.toFixed(2)} ${error.unit}`
+
+                    const diffPercent = Math.abs(diff / prevError.value) * 100;
+                    const diffPercentTxt = `${diffSign}${diffPercent.toFixed(2)}%`
+
+                    const textNode = document.createTextNode(` (${diffTxt} ~ ${diffPercentTxt})`)
+                    span.appendChild(textNode);
+                    li.appendChild(span);
                 }
             }
 
@@ -105,7 +142,7 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
             const totalErrors = await api.err.getTotalErr({
                 err_type: error.name,
                 app_name: elms.data.app.value,
-                data_exp_name: elms.data.exp.value,
+                data_exp_name: elms.data.exp_name.value,
                 model_exp_name: elms.prediction.model.value,
             });
 
@@ -125,8 +162,6 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
         state.lastErrors = newErrors;
     }
 
-
-
     // add the prediction trace to the new traces
     newTraces.push(predTrace);
 
@@ -140,7 +175,7 @@ export async function predict(state: State, canvas: Canvas, elms: Elms) {
 
 export async function setup(state: State, canvas: Canvas, elms: Elms) {
     elms.prediction.selectExpModel.addEventListener("click", () => {
-        elms.prediction.model.value = elms.data.exp.value;
+        elms.prediction.model.value = elms.data.exp_name.value;
         updateModelInfo(state, elms);
     })
     elms.prediction.predict.addEventListener("click", () => predict(state, canvas, elms));

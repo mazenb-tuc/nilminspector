@@ -1,4 +1,4 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 
 export function getRndColor(): string {
   return `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;

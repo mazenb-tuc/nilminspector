@@ -1,7 +1,44 @@
 set dotenv-load
 
+REDIS_CONTAINER_NAME := "nilm-inspector-redis"
+CELERY := env_var("CONDA_ENV_BIN_PATH") / "celery"
+CURR_USER := `whoami`
+FLOWER_PORT := "5775"
+
 dev:
 	cd ..; $CONDA_ENV_BIN_PATH/uvicorn backend.main:app --reload --port $BACKEND_PORT
 
 open-docs:
 	open http://localhost:$BACKEND_PORT/docs
+
+start-redis args="-d":
+	docker run \
+		--name {{REDIS_CONTAINER_NAME}} \
+		-p $REDIS_PORT:6379 \
+		{{args}} \
+		redis:7.4.1
+
+stop-redis:
+	docker stop {{REDIS_CONTAINER_NAME}}
+	docker rm {{REDIS_CONTAINER_NAME}}
+
+start-celery:
+	cd ..; {{CELERY}} --app backend.tasks.celery worker --loglevel=INFO
+
+start-flower:
+	cd ..; {{CELERY}} --app backend.tasks.celery flower --port={{FLOWER_PORT}}
+
+open-flower:
+	open http://localhost:{{FLOWER_PORT}}
+
+kill:
+	ps aux | grep {{CURR_USER}} | grep "uvicorn backend.main:app" | grep -v grep | awk '{print $2}' | xargs kill
+
+free-port port="8000":
+	sudo lsof -ti:{{port}} | xargs kill -9
+
+open-api-docs:
+	open http://localhost:$BACKEND_PORT/docs
+
+start-redisinsight:
+	docker run -it --name redisinsight -p 5540:5540 redis/redisinsight

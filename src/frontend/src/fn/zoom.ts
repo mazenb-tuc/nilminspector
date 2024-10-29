@@ -10,6 +10,7 @@ import * as plot from "./data/plot"
 async function zoom(state: State, canvas: Canvas, elms: Elms) {
     // disable modifying
     elms.data.modify.mains.enabled.checked = false;
+    elms.data.modify.gt.enabled.checked = false;
 
     const fig = state.fig;
     if (fig === null) {
@@ -105,7 +106,6 @@ async function zoom(state: State, canvas: Canvas, elms: Elms) {
             canvasXMax: canvas.plotArea.x.max,
         });
         const newStartDatetimeStr = xDates[newStartDatetimeIdx]
-        console.log(newStartDatetimeStr)
         const newStartDatetime = new Date(newStartDatetimeStr)
 
         // caculate duration in minutes

@@ -10,8 +10,11 @@ from .fm import router as fm_router
 from .day_info import router as day_info_router
 from .ds_info import router as ds_info_router
 from .rnd import router as rnd_router
+from .overview import router as overview_router
 
 router = APIRouter(prefix="/api")
+
+# subrouters
 router.include_router(data_router)
 router.include_router(predict_router)
 router.include_router(err_router)
@@ -22,3 +25,4 @@ router.include_router(fm_router)
 router.include_router(day_info_router)
 router.include_router(ds_info_router)
 router.include_router(rnd_router)
+router.include_router(overview_router)

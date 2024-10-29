@@ -1,10 +1,18 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as datetime from "@/utils/datetime";
 
 export async function getErrTypes(): Promise<string[]> {
     const resp = await fetch(`${constants.backendApiUrl}/err/types`);
     const respObj = await resp.json();
     return respObj as string[];
+}
+
+export type ErrHigherBetter = { [key: string]: boolean }; // key is err type
+
+export async function getHigherBetter(): Promise<ErrHigherBetter> {
+    const resp = await fetch(`${constants.backendApiUrl}/err/higher_better`);
+    const respObj = await resp.json();
+    return respObj as ErrHigherBetter;
 }
 
 // backend.api.err.ErrHistParams
@@ -34,9 +42,9 @@ export async function getErrHist(params: ErrHistParams): Promise<ErrHistResponse
     return respObj as ErrHistResponse;
 }
 
-// backend.api.err.RndDataWithErrParams
-export interface RndDataWithErrParams {
-    data_exp_name: string;
+// backend.api.err.RndDateWithErrParams
+export interface RndDateWithErrParams {
+    exp_name: string;
     app_name: string;
     err_type: string;
     err_min: number;
@@ -44,24 +52,27 @@ export interface RndDataWithErrParams {
     duration_samples: number;
 }
 
-// backend.api.err.RndDataWithErrResponse
-export interface RndDataWithErrResponse {
-    data: datetime.SimpleDateStringStampedData;
+// backend.api.err.RndDateWithErrResponse
+export interface RndDateWithErrResponse {
     err: boolean;
     err_msg: string;
+    start_date: datetime.SimpleDateTimeString;
+    end_date: datetime.SimpleDateTimeString;
+    duration_samples: number;
 }
 
-export async function getRndDataWithErr(params: RndDataWithErrParams): Promise<RndDataWithErrResponse> {
-    const resp = await fetch(`${constants.backendApiUrl}/err/rnd_data_with_err`, {
+export async function getRndDateWithErr(params: RndDateWithErrParams): Promise<RndDateWithErrResponse> {
+    const resp = await fetch(`${constants.backendApiUrl}/err/rnd_date_with_err`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
         },
         body: JSON.stringify(params),
     });
-    const respObj = await resp.json();
-    respObj.data = datetime.isoTimeStampedDataToSimpleDateStringStampedData(respObj.data);
-    return respObj as RndDataWithErrResponse;
+    const respObj = await resp.json() as RndDateWithErrResponse;
+    respObj.start_date = datetime.isoToSimple(respObj.start_date);
+    respObj.end_date = datetime.isoToSimple(respObj.end_date);
+    return respObj as RndDateWithErrResponse;
 }
 
 // backend.api.err.TotalErrParams

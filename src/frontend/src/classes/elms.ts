@@ -4,6 +4,10 @@ export default class Elms {
     legend: document.querySelector("#legend") as HTMLDivElement,
     info: document.querySelector("#info") as HTMLDivElement,
   };
+  pbar = {
+    bar: document.querySelector("#pbar") as HTMLProgressElement,
+    title: document.querySelector("#pbarTitle") as HTMLSpanElement,
+  }
   quickCtrl = {
     shift: {
       durationSamples: document.querySelector("#shiftDurationSamples") as HTMLInputElement,
@@ -23,7 +27,7 @@ export default class Elms {
     dataset: document.querySelector("#dataset") as HTMLSelectElement,
     house: document.querySelector("#house") as HTMLSelectElement,
     app: document.querySelector("#app") as HTMLSelectElement,
-    exp: document.querySelector("#exp") as HTMLSelectElement,
+    exp_name: document.querySelector("#exp_name") as HTMLSelectElement,
     pick: {
       date: document.querySelector("#datePicker") as HTMLInputElement,
       startTime: document.querySelector("#startTimePicker") as HTMLInputElement,
@@ -56,6 +60,20 @@ export default class Elms {
       mains: {
         enabled: document.querySelector("#modifyMains") as HTMLInputElement,
         reset: document.querySelector("#resetMains") as HTMLButtonElement,
+      },
+      gt: {
+        enabled: document.querySelector("#modifyGt") as HTMLInputElement,
+        reset: document.querySelector("#resetGt") as HTMLButtonElement,
+        autoModMains: document.querySelector("#modifyGtAutoModifyMains") as HTMLInputElement,
+      }
+    },
+    overview: {
+      dailyActivity: {
+        yearSelector: document.querySelector("#dailyActivityYearSelect") as HTMLSelectElement,
+        plotContainer: {
+          mains: document.querySelector("#dailyActivityYearPlotDiv") as HTMLDivElement,
+          app: document.querySelector("#appDailyActivityYearPlotDiv") as HTMLDivElement,
+        }
       }
     },
   };
@@ -93,9 +111,21 @@ export default class Elms {
     height: document.querySelector("#fm #fmHeight") as HTMLInputElement,
     get: document.querySelector("#fm button") as HTMLButtonElement,
     canvasContainer: document.querySelector("#fm #canvasContainer") as HTMLCanvasElement,
+    showOnTop: document.querySelector("#fm #showFmOnTop") as HTMLInputElement,
   };
   plot = {
-    logScale: document.querySelector("#logScale") as HTMLInputElement,
+    load: {
+      selector: document.querySelector("#settingsSelector") as HTMLSelectElement,
+      loadBtn: document.querySelector("#loadSettingsBtn") as HTMLButtonElement,
+      saveBtn: document.querySelector("#saveSettingsBtn") as HTMLButtonElement,
+    },
+    logScale: {
+      toggle: document.querySelector("#logScaleToggle") as HTMLInputElement,
+      base: {
+        natural: document.querySelector("#logScaleBaseNatural") as HTMLInputElement,
+        decimal: document.querySelector("#logScaleBaseDecimal") as HTMLInputElement,
+      }
+    },
     lineWidth: document.querySelector("#lineWidth") as HTMLInputElement,
     padding: {
       buttom: document.querySelector("#paddingButtom") as HTMLInputElement,

@@ -22,3 +22,4 @@ export default function objectToHtmlList(obj: object): string {
 
     return `<ul>${makeList(obj)}</ul>`;
 }
+

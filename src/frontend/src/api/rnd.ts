@@ -1,4 +1,4 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 import * as datetime from "@/utils/datetime";
 
 export type ISOTimeStamp = string;
@@ -13,7 +13,13 @@ export interface DataStartDurationParams {
     only_active: boolean;
 }
 
-export async function getRandomValidDayDate(params: DataStartDurationParams): Promise<datetime.SimpleDateString> {
+export interface GetRandomValidDayDateResponse {
+    timestamp: datetime.SimpleDateTimeString;
+    err: boolean;
+    msg: string;
+}
+
+export async function getRandomValidDayDate(params: DataStartDurationParams): Promise<GetRandomValidDayDateResponse> {
     const resp = await fetch(`${constants.backendApiUrl}/rnd/valid_day_date`, {
         method: "POST",
         headers: {
@@ -21,6 +27,9 @@ export async function getRandomValidDayDate(params: DataStartDurationParams): Pr
         },
         body: JSON.stringify(params),
     });
-    const date: datetime.ISOTimeStamp = await resp.json()
-    return datetime.isoDateStringToSimpleDateString(date);
+    const respJson = await resp.json() as GetRandomValidDayDateResponse;
+    if (!respJson.err) {
+        respJson.timestamp = datetime.isoToSimple(respJson.timestamp);
+    }
+    return respJson;
 }

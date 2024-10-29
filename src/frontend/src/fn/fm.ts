@@ -119,4 +119,7 @@ async function getFm(state: State, elms: Elms) {
 export async function setup(state: State, canvas: Canvas, elms: Elms) {
     // get feature map
     elms.fm.get.addEventListener("click", () => getFm(state, elms))
+
+    // show on top
+    elms.fm.showOnTop.addEventListener("change", () => alert("TODO"));
 }

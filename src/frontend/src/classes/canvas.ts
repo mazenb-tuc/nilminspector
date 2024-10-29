@@ -1,7 +1,7 @@
 import Elms from "./elms";
 import State from "./state";
 
-import constants from "@/constants";
+import constants from "@/utils/constants";
 
 
 export default class Canvas {
@@ -26,19 +26,34 @@ export default class Canvas {
         return;
       }
 
+      let traceToModifyName: string | undefined = undefined;
       if (this.elms.data.modify.mains.enabled.checked) {
+        traceToModifyName = "mains"
+      } else if (this.elms.data.modify.gt.enabled.checked) {
+        traceToModifyName = this.elms.data.app.value;
+      }
+
+      if (traceToModifyName !== undefined) {
         const rect = this.elms.draw.canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
 
         if (this.state.fig !== undefined) {
-          const mainsTrace = this.state.fig?.getTraceByName("mains");
+          const trace = this.state.fig?.getTraceByName(traceToModifyName);
           if (
-            mainsTrace !== undefined &&
+            trace !== undefined &&
             this.state.fig?.engMin !== undefined &&
             this.state.fig?.engMax !== undefined
           ) {
-            mainsTrace?.modify(this, this.state, this.state.fig?.engMin, this.state.fig?.engMax, x, y);
+            trace?.modify(
+              this,
+              this.state,
+              this.state.fig?.engMin,
+              this.state.fig?.engMax,
+              x,
+              y,
+              this.elms.data.modify.gt.autoModMains.checked, // modifyMains
+            );
           }
         }
       }
@@ -57,13 +72,13 @@ export default class Canvas {
     this.state.fig?.plot();
   }
 
-  setLoading() {
+  setLoading(msg: string = "Loading...") {
     this.reset();
 
     // draw loading text
     this.ctx.font = `30px ${constants.canvasFontFamily}`;
     this.ctx.fillStyle = "black";
-    this.ctx.fillText("Loading...", this.width / 2 - 50, this.height / 2);
+    this.ctx.fillText(msg, this.width / 2 - 50, this.height / 2);
   }
 
   get width(): number {

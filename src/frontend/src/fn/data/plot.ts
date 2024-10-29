@@ -20,7 +20,7 @@ export async function range(state: State, canvas: Canvas, elms: Elms) {
     const appParams = {
         start: selectedDatetimeRange.start,
         duration: `${selectedDurationSamples}m`,
-        data_exp_name: elms.data.exp.value,
+        data_exp_name: elms.data.exp_name.value,
     }
 
     const dataParams: api.data.DataStartDurationParams[] = [

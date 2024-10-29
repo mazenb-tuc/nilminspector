@@ -1,7 +1,7 @@
 import * as utils from "@/utils/colors";
 import * as map from "@/utils/map";
 import * as datetime from "@/utils/datetime";
-import CustomEventNames from "@/events";
+import CustomEventNames from "@/utils/events";
 
 import Canvas from "./canvas";
 import State from "./state";
@@ -10,11 +10,11 @@ export default class Trace {
   constructor(
     public idx: number,
     public name: string,
-    public data: datetime.SimpleDateStringStampedData,
+    public data: datetime.SimpleDateTimeStringStampedData,
     public color: string = utils.getRndColor(),
   ) { }
 
-  plt(canvas: Canvas, engMin: number, engMax: number) {
+  plt(canvas: Canvas, engMin: number, engMax: number, log_options: { log_scale: boolean, log_scale_base: number }) {
     const ctx = canvas.ctx;
     const engVals = Object.values(this.data);
     const simpleDatesStrings = Object.keys(this.data);
@@ -35,6 +35,7 @@ export default class Trace {
         engMax,
         canvasYMin: canvas.plotArea.y.min,
         canvasYMax: canvas.plotArea.y.max,
+        ...log_options,
       });
 
     ctx.strokeStyle = this.color;
@@ -53,7 +54,7 @@ export default class Trace {
     ctx.lineWidth = oldLineWidth;
   }
 
-  modify(canvas: Canvas, state: State, engMin: number, engMax: number, mouseCanvasX: number, mouseCanvasY: number) {
+  modify(canvas: Canvas, state: State, engMin: number, engMax: number, mouseCanvasX: number, mouseCanvasY: number, modifyMains: boolean = true) {
     // mouse x corresponds to date
     const dates = Object.keys(this.data);
     const dateIdx = map.canvasXToIdx({
@@ -81,6 +82,19 @@ export default class Trace {
 
     // modify the data
     this.data[dates[dateIdx]] = newEngVal;
+
+    // if modifing appliance data, update the mains data to sum up
+    if (modifyMains && this.name !== "mains") {
+      const mainsTrace = state.fig?.getTraceByName("mains");
+      if (!mainsTrace) return;
+
+      const originalMains = state.getOriginalTraces().filter(trace => trace.name === "mains");
+      if (originalMains.length === 0) return;
+      const originalMainsVal = originalMains[0].data[dates[dateIdx]];
+
+      // TODO: this solution does not account for a modified mains!!!
+      mainsTrace.data[dates[dateIdx]] = originalMainsVal + newEngVal;
+    }
 
     // re-plot the trace
     canvas.clear();

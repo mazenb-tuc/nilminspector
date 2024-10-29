@@ -11,6 +11,9 @@ mkdir nilmtk; cd nilmtk; git clone https://github.com/nilmtk/nilm_metadata; cd n
 cd ..; git clone https://github.com/nilmtk/nilmtk; cd nilmtk; pip install -e '.[dev]' --no-deps
 cd ..; git clone https://github.com/nilmtk/nilmtk-contrib; cd nilmtk-contrib; pip install -e '.[dev]' --no-deps
 
+# update nilmtk-contrib from old keras imports
+cp ma-embeddedml/src/nilmtk-contrib/nilmtk_contrib/disaggregate/*.py ./nilmtk_contrib/disaggregate
+
 # enilm
 cd ma-embeddedml/enilm/enilm; pip install -e '.[dev]' --no-deps
 
@@ -25,4 +28,23 @@ curl -fsSL https://bun.sh/install | bash
 
 # cache dir
 mkdir -p ${CACHE_FOLDER}
+```
+
+# Development
+
+```sh
+cd src/backend; just start-redis start-celery start-flower dev
+cd src/frontend; just dev
+```
+
+To see the API docs:
+
+```sh
+cd src/backend; just open-api
+```
+
+To monitor celery tasks:
+
+```sh
+cd src/backend; just open-flower
 ```

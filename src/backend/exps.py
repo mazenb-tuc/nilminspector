@@ -1,41 +1,17 @@
-from typing import List, Iterable
+from typing import List, Iterable, Type
 from collections import Counter
 
-from pydantic import BaseModel
-
-import enilm.etypes
-import enilm.norm
-import enilm.yaml.config
-import enilm.datasets
-import enilm.appliances
-
 from .mem import cache_folder
+from .types.exp import Exp, ModelExp
 
 
-class Exp(BaseModel):
-    dataset: str  # enilm.etypes.DatasetID
-    house: enilm.etypes.HouseNr
-    app: enilm.etypes.AppName
-    exp_name: str
-    app_norm_params: enilm.norm.NormParams
-    mains_norm_params: enilm.norm.NormParams
-    selected_model_weights: str
-    sequence_length: int
-    selected_ac_type: enilm.yaml.config.ACTypes
-    resample_params: enilm.yaml.config.ResampleParams
-    selected_train_percent: float
-    batch_size: int
-    num_epochs: int
-    model_name: str
-    description: str = ""
-    on_power_threshold: float
-
-
-def get_multi_exp_for(exp_name: str) -> Iterable[Exp]:
+def get_multi_exp_for(exp_name: str, exp_class: Type[Exp] = ModelExp) -> Iterable[Exp]:
     # extend by all exps!
     exps_path = cache_folder / "nbs" / exp_name / "exps"
+    if not exps_path.exists():
+        raise FileNotFoundError(f"Can't find exps folder: {exps_path}")
     for exp_file in exps_path.glob("*.json"):
-        yield Exp.model_validate_json(exp_file.read_text())
+        yield exp_class.model_validate_json(exp_file.read_text())
 
 
 all_exps: List[Exp] = [
@@ -57,3 +33,10 @@ def get_exp_by_name(exp_name: str) -> Exp:
         if dhe.exp_name == exp_name:
             return dhe
     raise ValueError(f"Can't find exp by name: {exp_name}")
+
+
+def get_model_exp_by_name(exp_name: str) -> ModelExp:
+    exp: Exp = get_exp_by_name(exp_name)
+    if not isinstance(exp, ModelExp):
+        raise ValueError("Errors can only be computed for ModelExp")
+    return exp

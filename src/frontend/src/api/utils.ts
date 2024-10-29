@@ -1,4 +1,4 @@
-import constants from "@/constants";
+import constants from "@/utils/constants";
 
 // backend.api.utils.ResampleRuleToSecondsParams
 interface ResampleRuleToSecondsParams {

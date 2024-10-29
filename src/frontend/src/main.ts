@@ -9,14 +9,18 @@ import * as data from "@/fn/data/index";
 import * as predict from "@/fn/predict";
 import * as snapshot from "@/fn/snapshot";
 import * as std from "@/fn/std";
-import * as mean from "@/fn/mean";
 import * as shift from "@/fn/shift";
 import * as zoom from "@/fn/zoom";
 import * as models from "@/fn/models";
 import * as fm from "@/fn/fm";
 import * as suntimes from "@/fn/suntimes";
+import * as plt_settings from "@/fn/plt_settings";
+import * as datetime from "@/fn/datetime";
+import * as modify from "@/fn/modify";
+import * as data_modify from "@/fn/data_modify";
 
 import * as nav from "@/utils/nav";
+import replot from "@/utils/replot"
 
 const elms = new Elms();
 const state = new State(elms);
@@ -30,7 +34,7 @@ window.onload = async () => {
   await setup();
 
   // load and plot sample data on page load
-  await data.random(state, canvas, elms);
+  // await data.random(state, canvas, elms);
 
   nav.enableNavElms()
 };
@@ -54,11 +58,27 @@ async function setup() {
     predict.setup(state, canvas, elms),
     snapshot.setup(state, canvas, elms),
     std.setup(state, canvas, elms),
-    mean.setup(state, canvas, elms),
     shift.setup(state, canvas, elms),
     zoom.setup(state, canvas, elms),
     models.setup(state, canvas, elms),
     fm.setup(state, canvas, elms),
     suntimes.setup(state, canvas, elms),
+    plt_settings.setup(state, canvas, elms),
+    datetime.setup(state, canvas, elms),
+    modify.setup(state, canvas, elms),
+    data_modify.setup(state, canvas, elms),
+    replotSetup(state, canvas, elms),
   ])
+}
+
+async function replotSetup(state: State, canvas: Canvas, elms: Elms) {
+  // any simple replot only change
+
+  // mean line
+  elms.mean.show.addEventListener("change", () => replot(state, canvas));
+
+  // log scale
+  elms.plot.logScale.toggle.addEventListener("change", () => replot(state, canvas));
+  elms.plot.logScale.base.natural.addEventListener("change", () => replot(state, canvas));
+  elms.plot.logScale.base.decimal.addEventListener("change", () => replot(state, canvas));
 }

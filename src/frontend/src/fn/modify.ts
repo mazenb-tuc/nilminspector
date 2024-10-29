@@ -2,11 +2,13 @@ import State from "@/classes/state"
 import Elms from "@/classes/elms"
 import Canvas from "@/classes/canvas"
 
-import CustomEventNames from "@/events";
+import CustomEventNames from "@/utils/events";
 
 import * as predict from "./predict";
 
 const mainsIsModefiedHandler = (state: State, canvas: Canvas, elms: Elms) => async () => {
+    console.log("Mains is modified");
+
     // auto predict if enabled
     if (elms.prediction.live.enabled.checked) {
         // grace period is valid?
@@ -24,7 +26,7 @@ const mainsIsModefiedHandler = (state: State, canvas: Canvas, elms: Elms) => asy
     }
 }
 
-export async function setupListeners(state: State, canvas: Canvas, elms: Elms) {
+export async function setup(state: State, canvas: Canvas, elms: Elms) {
     // listeners for custom events
     window.addEventListener(
         CustomEventNames.MAINS_IS_MODIFIED,
