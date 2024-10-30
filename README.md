@@ -76,3 +76,24 @@ ModelExp.model_validate_json(
     (cache_folder / "nbs" / EXP_NAME / "exp.json").read_text()
 )
 ```
+
+# Citation
+
+```bibtex
+@inproceedings{10.1145/3671127.3698794,
+    author = {Bouchur, Mazen and Reinhardt, Andreas},
+    title = {NILMInspector: An Interactive Tool for Data Visualization and Manipulation in Load Disaggregation},
+    year = {2024},
+    isbn = {9798400707063},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/3671127.3698794},
+    doi = {10.1145/3671127.3698794},
+    booktitle = {Proceedings of the 11th ACM International Conference on Systems for Energy-Efficient Buildings, Cities, and Transportation},
+    pages = {323–328},
+    numpages = {6},
+    keywords = {Energy Disaggregation, Explainable Artificial Intelligence, Interactive Visualization, Machine Learning Tools, Non-Intrusive Load Monitoring, Performance Evaluation},
+    location = {Hangzhou, China},
+    series = {BuildSys '24}
+}
+```
