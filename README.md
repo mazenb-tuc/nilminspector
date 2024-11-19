@@ -1,5 +1,7 @@
 Source code for the NILMInspector tool.
 
+https://github.com/user-attachments/assets/5613c79a-45d9-4d47-84d5-df53d53d4d21
+
 # Environment Setup
 
 ## Create Conda Environment
