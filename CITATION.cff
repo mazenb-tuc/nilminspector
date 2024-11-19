@@ -1,0 +1,45 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: NILMInspector
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mazen
+    family-names: Bouchur
+    email: mazen.bouchur@tu-clausthal.de
+    affiliation: TU Clausthal
+    orcid: 'https://orcid.org/0000-0002-3999-6971'
+  - given-names: Andreas
+    family-names: Reinhardt
+    email: reinhardt@ieee.org
+    affiliation: TU Clausthal
+    orcid: 'https://orcid.org/0000-0002-8637-8420'
+identifiers:
+  - type: doi
+    value: 10.1145/3671127.3698794
+    description: >-
+      Proceedings of the 11th ACM International Conference
+      on Systems for Energy-Efficient Buildings, Cities, and
+      Transportation
+repository-code: 'https://github.com/mazenb-tuc/nilminspector'
+abstract: >-
+  NILMInspector is a web-based application that allows users
+  to interact with NILM models and datasets. It provides a
+  user-friendly interface for data visualization and
+  real-time evaluation. The tool is designed to help
+  researchers and practitioners in the field of NILM to
+  better understand and analyze their data and models.
+keywords:
+  - Energy Disaggregation
+  - Explainable Artificial Intelligence
+  - Interactive Visualization
+  - Machine Learning Tools
+  - Non-Intrusive Load Monitoring
+  - Performance Evaluation
+license: MIT
+commit: 838742e
+date-released: '2024-11-19'
