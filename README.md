@@ -1,5 +1,9 @@
 Source code for the NILMInspector tool.
 
+This tool is a web-based application that allows users to interact with NILM models and datasets. It provides a user-friendly interface for data visualization and real-time evaluation. The tool is designed to help researchers and practitioners in the field of NILM to better understand and analyze their data and models.
+
+The following video shows a demo of the tool, where it is used to simulate a new heating cycle of the dishwasher and evaluate the performance of a NILM model:
+
 https://github.com/user-attachments/assets/5613c79a-45d9-4d47-84d5-df53d53d4d21
 
 # Environment Setup
